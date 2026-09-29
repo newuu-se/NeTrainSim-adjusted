@@ -107,3 +107,9 @@ NeTrainSim.pro.user
 
 build/*
 build-*/*
+
+# Log files
+log.txt
+
+# Generated files of simulator
+res/*
