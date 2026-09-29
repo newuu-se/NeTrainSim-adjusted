@@ -1172,7 +1172,7 @@ void Simulator::initializeSimulator(bool emitSignal)
         generateSummaryData();
         exportSummaryToTXTFile();
         finalizeSimulation();
-    });
+    }, Qt::DirectConnection);
 
     // define trajectory file and set it up
     if (this->exportTrajectory) {

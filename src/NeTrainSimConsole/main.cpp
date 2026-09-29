@@ -246,6 +246,12 @@ int main(int argc, char *argv[])
         std::cout <<"Starting the Simulator!                                "
                      "              \n";
         sim->runSimulation();
+        // Drain any queued Qt events posted during simulation (e.g. from
+        // queued signal connections in SimulatorAPI) before QCoreApplication
+        // is destroyed.  Without this the static SimulatorAPI singleton
+        // outlives QCoreApplication and the deferred event delivery triggers
+        // a use-after-free segfault during app destruction.
+        QCoreApplication::processEvents();
         std::cout << "Output folder: " << sim->getOutputFolder() << std::endl;
 
         // qDebug() << "\nType name for 65537:" << QMetaType::typeName(65537);
