@@ -588,6 +588,64 @@ void Train::updateLocNotch()
     }
 }
 
+void Train::setNotch(int notch)
+{
+    for (auto &loco : this->locomotives)
+    {
+        loco->setCommandedNotch(notch);
+    }
+}
+
+void Train::setNotches(const Vector<int> &notches)
+{
+    int count = min(static_cast<int>(notches.size()),
+                    static_cast<int>(this->locomotives.size()));
+    for (int i = 0; i < count; i++)
+    {
+        this->locomotives.at(i)->setCommandedNotch(notches.at(i));
+    }
+}
+
+void Train::clearNotch()
+{
+    for (auto &loco : this->locomotives)
+    {
+        loco->clearCommandedNotch();
+    }
+}
+
+bool Train::hasNotchControl()
+{
+    for (auto &loco : this->locomotives)
+    {
+        if (loco->hasCommandedNotch())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int Train::getCurrentNotch()
+{
+    if (this->locomotives.empty())
+    {
+        return 0;
+    }
+    return this->locomotives.front()->currentLocNotch;
+}
+
+Vector<int> Train::getCurrentNotches()
+{
+    Vector<int> notches;
+    notches.reserve(this->locomotives.size());
+    for (auto &loco : this->locomotives)
+    {
+        notches.push_back(loco->currentLocNotch);
+    }
+    return notches;
+}
+
 // ##################################################################
 // #                        end: utilities #
 // ##################################################################
@@ -2139,6 +2197,14 @@ QJsonObject Train::getCurrentStateAsJson()
         currentResistanceForces;
     jsonState["currentUsedTractivePower"] =
         currentUsedTractivePower;
+    jsonState["notch"]           = getCurrentNotch();
+    jsonState["notchControlOn"]  = hasNotchControl();
+    QJsonArray notchesArray;
+    for (const int notch : getCurrentNotches())
+    {
+        notchesArray.append(notch);
+    }
+    jsonState["notches"] = notchesArray;
 
 #ifdef BUILD_SERVER_ENABLED
     jsonState["containersCount"] =

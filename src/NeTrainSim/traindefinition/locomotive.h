@@ -80,6 +80,14 @@ public:
 	int maxLocNotch = 0;
 	/** The current notch the locomotive is going by */
 	int currentLocNotch = 0;
+	/** Whether an external controller (e.g. an RL agent) has taken
+	 *  over the notch of this locomotive. When true, the commanded
+	 *  notch below replaces the notch derived from the train speed. */
+	bool useCommandedNotch = false;
+	/** The notch commanded from outside the simulation. */
+	int commandedLocNotch = 0;
+	/** The throttle level (lambda) of the commanded notch. */
+	double commandedThrottleLevel = 0.0;
     /** The forced lower power factor to the locomotive in case lower
      *  energy consumption is required. */
     double locPowerReductionFactor = 1.0;
@@ -535,6 +543,38 @@ public:
      * @param [in,out]	trainSpeed	The train speed in m/s.
 	 */
 	void updateLocNotch(double &trainSpeed);
+
+	/**
+     * Hands the notch of this locomotive to an external controller.
+     *
+     * @details The commanded notch is converted to a throttle level
+     *          using the same discretization rule the simulation uses
+     *          internally, @f$ \lambda = (N/N_{max})^2 @f$, and it is
+     *          then used instead of the speed derived throttle level.
+     *          Notch 0 gives a throttle level of zero, i.e. no
+     *          tractive effort. The notch is clamped to the notches
+     *          this locomotive can actually achieve.
+     *
+     * @author	Qobiljon
+     *
+     * @param 	notch	The requested notch, zero based.
+     */
+	void setCommandedNotch(int notch);
+
+	/**
+     * Returns the notch of this locomotive back to the simulation.
+     */
+	void clearCommandedNotch();
+
+	/**
+     * @returns	The commanded notch, or zero if none was set.
+     */
+	int getCommandedNotch() const;
+
+	/**
+     * @returns	True if an external controller owns the notch.
+     */
+	bool hasCommandedNotch() const;
 
 	/**
 	 * @brief reduce the power that the locomotive is producing by

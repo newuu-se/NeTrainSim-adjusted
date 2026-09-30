@@ -276,6 +276,9 @@ double Locomotive::getlamdaDiscretized(double &lamda)
 
 double Locomotive::getDiscretizedThrottleCoef(double &trainSpeed)
 {
+    if (this->useCommandedNotch) {
+        return this->commandedThrottleLevel;
+    }
     double lmda, lamdaDiscretized;
     if (this->maxLocNotch == 0) {
         this->maxLocNotch = this->Nmax;
@@ -309,6 +312,9 @@ double Locomotive::getThrottleLevel(double & trainSpeed,
 {
 	double currentThrottleLevel = 0;
 	double throttleL = 0;
+	if (this->useCommandedNotch) {
+		return this->commandedThrottleLevel;
+	}
 	throttleL = getDiscretizedThrottleCoef(trainSpeed);
 	if (optimize) {
 		if (optimumThrottleLevel < 0){
@@ -324,6 +330,13 @@ double Locomotive::getThrottleLevel(double & trainSpeed,
 
 void Locomotive::updateLocNotch(double &trainSpeed)
 {
+	if (this->useCommandedNotch) {
+		// the external controller owns the notch, only the
+		// reported notch of a powered off locomotive is zeroed
+		this->currentLocNotch =
+			this->isLocOn ? this->commandedLocNotch : 0;
+		return;
+	}
 	if (trainSpeed == 0.0 || !this->isLocOn) { this->currentLocNotch = 0; }
 	else {
 		// get the discretized Throttle Level and compare it to the list
@@ -338,6 +351,36 @@ void Locomotive::updateLocNotch(double &trainSpeed)
         }
 	}
 
+}
+
+void Locomotive::setCommandedNotch(int notch)
+{
+	int effectiveMaxNotch = this->maxLocNotch > 0
+	                            ? min(this->maxLocNotch, this->Nmax)
+	                            : this->Nmax;
+	if (notch < 0) { notch = 0; }
+	if (notch > effectiveMaxNotch) { notch = effectiveMaxNotch; }
+
+	this->commandedLocNotch = notch;
+	double div = (double)notch / (double)this->Nmax;
+	this->commandedThrottleLevel = Utils::power(div, 2);
+	this->useCommandedNotch		 = true;
+	this->currentLocNotch		 = notch;
+}
+
+void Locomotive::clearCommandedNotch()
+{
+	this->useCommandedNotch = false;
+}
+
+int Locomotive::getCommandedNotch() const
+{
+	return this->commandedLocNotch;
+}
+
+bool Locomotive::hasCommandedNotch() const
+{
+	return this->useCommandedNotch;
 }
 
 void Locomotive::reducePower(double &reductionFactor)
@@ -381,6 +424,13 @@ double Locomotive::getTractiveForce(double &frictionCoef,
 {
 	if (!this->isLocOn) {
 		return 0;
+	}
+	if (this->useCommandedNotch && this->commandedThrottleLevel <= 0.0
+	    && trainSpeed == 0) {
+		// an externally commanded zero notch holds the locomotive,
+		// the adhesion limit must not be applied in its place
+		this->maxTractiveForce = 0.0;
+		return 0.0;
 	}
 	double f1,f = 0;
 	f1 = frictionCoef * this->currentWeight * 1000 * this->g;

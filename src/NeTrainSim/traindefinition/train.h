@@ -16,6 +16,7 @@
 #include <utility>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QJsonArray>
 
 #ifdef BUILD_SERVER_ENABLED
 #include <containerLib/containermap.h>
@@ -805,6 +806,58 @@ public:
      * @date	2/28/2023
      */
     void updateLocNotch();
+
+    /**
+     * \brief Hands the traction notch of all locomotives to an
+     *        external controller.
+     *
+     * @details Mirrors the paper's assumption of a single throttle
+     *          input for the train: the same notch is commanded to
+     *          every locomotive. The commanded notch replaces the
+     *          notch the simulation would derive from the speed, the
+     *          throttle to tractive force chain is unchanged.
+     *
+     * @author	Qobiljon
+     *
+     * @param 	notch	The requested notch, zero based.
+     */
+    void setNotch(int notch);
+
+    /**
+     * \brief Hands the traction notch of each locomotive to an
+     *        external controller.
+     *
+     * @author	Qobiljon
+     *
+     * @param 	notches	One notch per locomotive, in locomotive
+     *                  order. Extra entries are ignored, missing
+     *                  locomotives keep their current notch.
+     */
+    void setNotches(const Vector<int> &notches);
+
+    /**
+     * \brief Returns the traction notch of all locomotives back to the
+     *        simulation.
+     */
+    void clearNotch();
+
+    /**
+     * @returns	True if an external controller owns the notch of any
+     *          locomotive of this train.
+     */
+    bool hasNotchControl();
+
+    /**
+     * @returns	The notch of the first locomotive, or zero if the train
+     *          has no locomotive.
+     */
+    int getCurrentNotch();
+
+    /**
+     * @returns	The current notch of every locomotive, in locomotive
+     *          order.
+     */
+    Vector<int> getCurrentNotches();
 
     /**
      * \brief Immediate stop

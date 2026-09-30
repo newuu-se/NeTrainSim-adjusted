@@ -989,6 +989,18 @@ void SimulationServer::processCommand(
         // Extract byTimeSteps
         double runBy = byTimeStepsValue.toDouble();
 
+        // Optional: attach the state of every train (including
+        // the notch in effect) to the simulationAdvanced event,
+        // so a step based controller gets its observation in the
+        // same round trip
+        QJsonValue includeStatesValue =
+            getJsonValue(jsonMessage, "includeTrainStates");
+        if (!includeStatesValue.isUndefined())
+        {
+            mIncludeTrainStatesInStepEvents =
+                includeStatesValue.toBool();
+        }
+
         // Connect progress update if runBy <= 0
         if (runBy <= 0)
         {
@@ -1295,6 +1307,205 @@ void SimulationServer::processCommand(
             return;
         }
     }
+    else if (command == "setTrainNotch")
+    {
+        qInfo() << "[Server] Received command: "
+                   "setTrainNotch. "
+                   "Commanding the train notch.";
+
+        // Validate required fields
+        QList<QPair<bool, QString>> checks;
+        checks << checkJsonField(jsonMessage, "networkName",
+                                 command);
+        checks << checkJsonField(jsonMessage, "trainID",
+                                 command);
+
+        // Collect errors
+        QStringList errors;
+        for (const auto &check : checks)
+        {
+            if (!check.first)
+            {
+                errors << check.second;
+            }
+        }
+        if (!errors.isEmpty())
+        {
+            onErrorOccurred(errors.join("; "));
+            return;
+        }
+
+        // Extract network name and train ID
+        QString net =
+            getJsonValue(jsonMessage, "networkName")
+                .toString();
+        QString trainID =
+            getJsonValue(jsonMessage, "trainID").toString();
+
+        // Optional: a single notch for all locomotives, one
+        // notch per locomotive, or turning external notch
+        // control off
+        QJsonValue notchValue =
+            getJsonValue(jsonMessage, "notch");
+        QJsonValue notchesValue =
+            getJsonValue(jsonMessage, "notches");
+        QJsonValue enableValue =
+            getJsonValue(jsonMessage, "enable");
+
+        if (notchValue.isUndefined()
+            && notchesValue.isUndefined()
+            && enableValue.isUndefined())
+        {
+            onErrorOccurred("'setTrainNotch' requires a 'notch'"
+                            ", a 'notches' array, or an "
+                            "'enable' value");
+            return;
+        }
+
+        bool  ok        = true;
+        QJsonArray commandedNotches;
+
+        try
+        {
+            if (!notchValue.isUndefined())
+            {
+                int notch = notchValue.toInt();
+                ok        = SimulatorAPI::InteractiveMode::
+                    setTrainNotch(net, trainID, notch);
+            }
+            else if (!notchesValue.isUndefined())
+            {
+                QVector<int> notches;
+                QJsonArray   notchesArray =
+                    notchesValue.toArray();
+                for (const QJsonValue &value : notchesArray)
+                {
+                    notches.append(value.toInt());
+                }
+                ok = SimulatorAPI::InteractiveMode::
+                    setTrainNotches(net, trainID, notches);
+            }
+
+            if (ok && !enableValue.isUndefined()
+                && !enableValue.toBool())
+            {
+                ok = SimulatorAPI::InteractiveMode::
+                    setTrainNotchControlEnabled(net, trainID,
+                                                false);
+            }
+        }
+        catch (const std::exception &e)
+        {
+            onErrorOccurred("Error commanding the train "
+                            "notch: "
+                            + QString(e.what()));
+            return;
+        }
+
+        if (!ok)
+        {
+            onErrorOccurred("Train '" + trainID
+                            + "' was not found in network '"
+                            + net + "'");
+            return;
+        }
+
+        // Report the notch that is now in effect
+        QJsonObject state = SimulatorAPI::InteractiveMode::
+            getTrainState(net, trainID);
+
+        QJsonObject response;
+        response["event"]       = "trainNotchSet";
+        response["host"]        = "NeTrainSim";
+        response["success"]     = true;
+        response["networkName"] = net;
+        response["trainID"]     = trainID;
+        response["notch"]       = state["notch"];
+        response["notches"]     = state["notches"];
+        response["notchControlOn"] =
+            state["notchControlOn"];
+        if (!commandID.isEmpty())
+        {
+            response["commandId"] = commandID;
+        }
+
+        sendRabbitMQMessage(PUBLISHING_ROUTING_KEY.c_str(),
+                            response);
+        onWorkerReady();
+        return;
+    }
+    else if (command == "getTrainState")
+    {
+        qInfo() << "[Server] Received command: "
+                   "getTrainState. "
+                   "Reporting the train state.";
+
+        // Validate required fields
+        QList<QPair<bool, QString>> checks;
+        checks << checkJsonField(jsonMessage, "networkName",
+                                 command);
+        checks << checkJsonField(jsonMessage, "trainID",
+                                 command);
+
+        // Collect errors
+        QStringList errors;
+        for (const auto &check : checks)
+        {
+            if (!check.first)
+            {
+                errors << check.second;
+            }
+        }
+        if (!errors.isEmpty())
+        {
+            onErrorOccurred(errors.join("; "));
+            return;
+        }
+
+        QString net =
+            getJsonValue(jsonMessage, "networkName")
+                .toString();
+        QString trainID =
+            getJsonValue(jsonMessage, "trainID").toString();
+
+        QJsonObject state;
+        try
+        {
+            state = SimulatorAPI::InteractiveMode::
+                getTrainState(net, trainID);
+        }
+        catch (const std::exception &e)
+        {
+            onErrorOccurred("Error reading the train state: "
+                            + QString(e.what()));
+            return;
+        }
+
+        if (state.isEmpty())
+        {
+            onErrorOccurred("Train '" + trainID
+                            + "' was not found in network '"
+                            + net + "'");
+            return;
+        }
+
+        QJsonObject response;
+        response["event"]       = "trainState";
+        response["host"]        = "NeTrainSim";
+        response["success"]     = true;
+        response["networkName"] = net;
+        response["trainID"]     = trainID;
+        response["state"]       = state;
+        if (!commandID.isEmpty())
+        {
+            response["commandId"] = commandID;
+        }
+
+        sendRabbitMQMessage(PUBLISHING_ROUTING_KEY.c_str(),
+                            response);
+        onWorkerReady();
+        return;
+    }
     else if (command == "resetServer")
     {
         qInfo()
@@ -1522,6 +1733,25 @@ void SimulationServer::onSimulationAdvanced(
     jsonMessage["networkNamesTimes"] = jsonNetworkTimes;
     jsonMessage["networkNamesProgress"] =
         jsonNetworkProgress;
+
+    // Optionally attach the train states, so a step based
+    // controller gets its observation (including the notch that
+    // is in effect) in the same round trip
+    if (mIncludeTrainStatesInStepEvents)
+    {
+        QJsonObject jsonTrainStates;
+        for (auto it =
+                 networkNamesSimulationTimePairs.constBegin();
+             it !=
+             networkNamesSimulationTimePairs.constEnd();
+             ++it)
+        {
+            jsonTrainStates[it.key()] =
+                SimulatorAPI::InteractiveMode::
+                    getNetworkTrainStates(it.key());
+        }
+        jsonMessage["trainStates"] = jsonTrainStates;
+    }
 
     sendRabbitMQMessage(PUBLISHING_ROUTING_KEY.c_str(),
                         jsonMessage);
