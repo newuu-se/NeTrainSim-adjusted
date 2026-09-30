@@ -19,6 +19,10 @@ Before you start contributing to NeTrainSim, please follow these steps:
 11. Submit a pull request to the NeTrainSim repository with a clear description of your changes.
 12. If you want your name to be added to the contributing list, kindly refer to the following [allcontributors docmentation.](https://allcontributors.org/docs/en/bot/usage)
 
+## Building on macOS
+
+On macOS with [Homebrew](https://brew.sh) Qt6 installed (`brew install qt6`), run `./build-mac.sh` from the repository root. The script builds the `NeTrainSimConsole` target in Release mode, runs the sample project in `src/data/sampleProject`, and writes the simulation output to `res/` (both `build-mac/` and `res/` are generated and not tracked by git). On Linux, use `./build_with_admin.sh` instead.
+
 ## Guidelines
 
 When contributing to NeTrainSim, please follow these guidelines:
