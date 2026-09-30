@@ -119,6 +119,15 @@ private:
 
     QString commandID;
 
+    /**
+     * When true, the simulationAdvanced event also carries the
+     * current state of every train, which lets a step based
+     * controller read its observation without an extra round
+     * trip. Left off by default to keep the payload of the
+     * existing clients unchanged.
+     */
+    bool mIncludeTrainStatesInStepEvents = false;
+
     void loadRabbitMQConfig();
     void processCommand(const QJsonObject &jsonMessage);
     void consumeFromRabbitMQ(); // Function for consuming

@@ -1256,6 +1256,74 @@ public:
             QString networkName, QString trainID,
             QVector<QString> portNames);
 #endif
+
+        /**
+         * @brief Command the traction notch of a train.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @param notch The requested notch, zero based (zero
+         * commands no tractive effort).
+         * @details Hands the notch of every locomotive of the
+         * train to the caller. The commanded notch replaces
+         * the notch the simulation derives from the speed
+         * using the same discretization rule, so the throttle
+         * to tractive force chain is unchanged. Braking,
+         * collision and signal safety logic stay in force.
+         * @return true if the train exists and was commanded.
+         */
+        static bool setTrainNotch(QString networkName,
+                                  QString trainID, int notch);
+
+        /**
+         * @brief Command a separate traction notch per
+         * locomotive of a train.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @param notches One notch per locomotive, in
+         * locomotive order.
+         * @details The notch is clamped to the notches each
+         * locomotive can achieve.
+         * @return true if the train exists and was commanded.
+         */
+        static bool setTrainNotches(QString networkName,
+                                    QString trainID,
+                                    QVector<int> notches);
+
+        /**
+         * @brief Give the traction notch of a train back to
+         * the simulation.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @param enabled True to keep the commanded notch,
+         * false to resume the speed derived notch.
+         * @return true if the train exists.
+         */
+        static bool setTrainNotchControlEnabled(
+            QString     networkName, QString trainID,
+            bool        enabled);
+
+        /**
+         * @brief Get the current state of a single train.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @return The train state, including the applied
+         * notch, or an empty object if the train is unknown.
+         */
+        static QJsonObject getTrainState(QString networkName,
+                                         QString trainID);
+
+        /**
+         * @brief Get the current state of every train in a
+         * network.
+         * @param networkName Name of the network to query.
+         * @return One state object per train, in train order.
+         */
+        static QJsonArray
+        getNetworkTrainStates(QString networkName);
     };
 
     /**
@@ -1486,6 +1554,74 @@ public:
             QString networkName, QString trainID,
             QVector<QString> terminalNames);
 #endif
+
+        /**
+         * @brief Command the traction notch of a train.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @param notch The requested notch, zero based (zero
+         * commands no tractive effort).
+         * @details Hands the notch of every locomotive of the
+         * train to the caller. The commanded notch replaces
+         * the notch the simulation derives from the speed
+         * using the same discretization rule, so the throttle
+         * to tractive force chain is unchanged. Braking,
+         * collision and signal safety logic stay in force.
+         * @return true if the train exists and was commanded.
+         */
+        static bool setTrainNotch(QString networkName,
+                                  QString trainID, int notch);
+
+        /**
+         * @brief Command a separate traction notch per
+         * locomotive of a train.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @param notches One notch per locomotive, in
+         * locomotive order.
+         * @details The notch is clamped to the notches each
+         * locomotive can achieve.
+         * @return true if the train exists and was commanded.
+         */
+        static bool setTrainNotches(QString networkName,
+                                    QString trainID,
+                                    QVector<int> notches);
+
+        /**
+         * @brief Give the traction notch of a train back to
+         * the simulation.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @param enabled True to keep the commanded notch,
+         * false to resume the speed derived notch.
+         * @return true if the train exists.
+         */
+        static bool setTrainNotchControlEnabled(
+            QString     networkName, QString trainID,
+            bool        enabled);
+
+        /**
+         * @brief Get the current state of a single train.
+         * @param networkName Name of the network containing
+         * the train.
+         * @param trainID Unique identifier of the train.
+         * @return The train state, including the applied
+         * notch, or an empty object if the train is unknown.
+         */
+        static QJsonObject getTrainState(QString networkName,
+                                         QString trainID);
+
+        /**
+         * @brief Get the current state of every train in a
+         * network.
+         * @param networkName Name of the network to query.
+         * @return One state object per train, in train order.
+         */
+        static QJsonArray
+        getNetworkTrainStates(QString networkName);
     };
 
 private:

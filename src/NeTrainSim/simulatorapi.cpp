@@ -1,7 +1,9 @@
 #include "simulatorapi.h"
+#include "./traindefinition/train.h"
 #include "./traindefinition/trainslist.h"
 #include <QDebug> // For debugging
 #include <QEventLoop>
+#include <QJsonArray>
 #include <QMetaObject> // Required for QMetaObject::invokeMethod and Q_ARG
 #include <QThread>
 #include <QThread>  // Required for QThread
@@ -1487,6 +1489,93 @@ void SimulatorAPI::InteractiveMode::
 }
 #endif
 
+bool SimulatorAPI::InteractiveMode::setTrainNotch(
+    QString networkName, QString trainID, int notch)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return false;
+    }
+    train->setNotch(notch);
+    return true;
+}
+
+bool SimulatorAPI::InteractiveMode::setTrainNotches(
+    QString networkName, QString trainID,
+    QVector<int> notches)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return false;
+    }
+    Vector<int> commandedNotches;
+    commandedNotches.reserve(notches.size());
+    for (const int notch : notches)
+    {
+        commandedNotches.push_back(notch);
+    }
+    train->setNotches(commandedNotches);
+    return true;
+}
+
+bool SimulatorAPI::InteractiveMode::
+    setTrainNotchControlEnabled(QString networkName,
+                                QString trainID,
+                                bool    enabled)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return false;
+    }
+    if (enabled)
+    {
+        // keep the notch that is already commanded, or take over
+        // from whatever notch the simulation is currently at
+        if (!train->hasNotchControl())
+        {
+            train->setNotch(train->getCurrentNotch());
+        }
+    }
+    else
+    {
+        train->clearNotch();
+    }
+    return true;
+}
+
+QJsonObject SimulatorAPI::InteractiveMode::getTrainState(
+    QString networkName, QString trainID)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return QJsonObject();
+    }
+    return train->getCurrentStateAsJson();
+}
+
+QJsonArray SimulatorAPI::InteractiveMode::getNetworkTrainStates(
+    QString networkName)
+{
+    QJsonArray states;
+    for (const auto &train :
+         getInstance().getAllTrains(networkName))
+    {
+        if (train != nullptr)
+        {
+            states.append(train->getCurrentStateAsJson());
+        }
+    }
+    return states;
+}
+
 // -----------------------------------------------------------------------------
 // ----------------------------- Continuous Mode
 // -------------------------------
@@ -1609,3 +1698,88 @@ void SimulatorAPI::ContinuousMode::
         networkName, shipID, portNames);
 }
 #endif
+
+bool SimulatorAPI::ContinuousMode::setTrainNotch(
+    QString networkName, QString trainID, int notch)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return false;
+    }
+    train->setNotch(notch);
+    return true;
+}
+
+bool SimulatorAPI::ContinuousMode::setTrainNotches(
+    QString networkName, QString trainID,
+    QVector<int> notches)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return false;
+    }
+    Vector<int> commandedNotches;
+    commandedNotches.reserve(notches.size());
+    for (const int notch : notches)
+    {
+        commandedNotches.push_back(notch);
+    }
+    train->setNotches(commandedNotches);
+    return true;
+}
+
+bool SimulatorAPI::ContinuousMode::
+    setTrainNotchControlEnabled(QString networkName,
+                                QString trainID,
+                                bool    enabled)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return false;
+    }
+    if (enabled)
+    {
+        if (!train->hasNotchControl())
+        {
+            train->setNotch(train->getCurrentNotch());
+        }
+    }
+    else
+    {
+        train->clearNotch();
+    }
+    return true;
+}
+
+QJsonObject SimulatorAPI::ContinuousMode::getTrainState(
+    QString networkName, QString trainID)
+{
+    std::shared_ptr<Train> train =
+        getInstance().getTrainByID(networkName, trainID);
+    if (train == nullptr)
+    {
+        return QJsonObject();
+    }
+    return train->getCurrentStateAsJson();
+}
+
+QJsonArray SimulatorAPI::ContinuousMode::getNetworkTrainStates(
+    QString networkName)
+{
+    QJsonArray states;
+    for (const auto &train :
+         getInstance().getAllTrains(networkName))
+    {
+        if (train != nullptr)
+        {
+            states.append(train->getCurrentStateAsJson());
+        }
+    }
+    return states;
+}
