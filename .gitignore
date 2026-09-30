@@ -105,11 +105,11 @@ NeTrainSim.pro.user
 /src/NeTrainSimInstaller/packages/com.VTTICSM.NeTrainSim/data/*
 /src/NeTrainSimInstaller/packages/com.VTTICSM.NeTrainSimGUI/data/*
 
-build/*
-build-*/*
+build/
+build-*/
 
 # Log files
 log.txt
 
 # Generated files of simulator
-res/*
+res/
