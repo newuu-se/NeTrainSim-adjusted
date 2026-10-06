@@ -57,7 +57,9 @@ int main(int argc, char **argv)
     std::printf("\n-- commanded notch = Nmax (%d) --\n", N);
     t->setNotch(N);
     check(t->hasNotchControl(), "hasNotchControl() is true after setNotch");
-    check(t->getCurrentNotch() == N, "getCurrentNotch() == Nmax");
+    check(t->getLeadNotch() == N, "getLeadNotch() == Nmax");
+    check(t->getCurrentNotches().front() == t->getLeadNotch(),
+          "getCurrentNotches().front() == getLeadNotch()");
     const double expectedFull = std::pow((double)N / N, 2.0);
     for (int i = 0; i < 4; ++i)
     {
@@ -72,7 +74,7 @@ int main(int argc, char **argv)
 
     std::printf("\n-- commanded notch = 0 (standstill must not roll) --\n");
     t->setNotch(0);
-    check(t->getCurrentNotch() == 0, "getCurrentNotch() == 0");
+    check(t->getLeadNotch() == 0, "getLeadNotch() == 0");
     for (int i = 0; i < 4; ++i)
     {
         double s = speeds[i];
@@ -92,7 +94,7 @@ int main(int argc, char **argv)
     int half = N / 2;
     t->setNotch(half);
     const double expectedHalf = std::pow((double)half / N, 2.0);
-    check(t->getCurrentNotch() == half, "getCurrentNotch() == N/2");
+    check(t->getLeadNotch() == half, "getLeadNotch() == N/2");
     for (int i = 0; i < 4; ++i)
     {
         double s = speeds[i];
@@ -106,9 +108,9 @@ int main(int argc, char **argv)
 
     std::printf("\n-- out-of-range notches are clamped --\n");
     t->setNotch(N + 100);
-    check(t->getCurrentNotch() == N, "setNotch(N+100) clamps to Nmax");
+    check(t->getLeadNotch() == N, "setNotch(N+100) clamps to Nmax");
     t->setNotch(-5);
-    check(t->getCurrentNotch() == 0, "setNotch(-5) clamps to 0");
+    check(t->getLeadNotch() == 0, "setNotch(-5) clamps to 0");
     l->isLocOn = false;
     t->setNotch(N);
     double locoSpeed = 2.5;

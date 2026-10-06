@@ -80,9 +80,9 @@ public:
 	int maxLocNotch = 0;
 	/** The current notch the locomotive is going by */
 	int currentLocNotch = 0;
-	/** Whether an external controller (e.g. an RL agent) has taken
-	 *  over the notch of this locomotive. When true, the commanded
-	 *  notch below replaces the notch derived from the train speed. */
+	/** Whether an external controller has taken over the notch of
+	 *  this locomotive. When true, the commanded notch below replaces
+	 *  the notch derived from the train speed. */
 	bool useCommandedNotch = false;
 	/** The notch commanded from outside the simulation. */
 	int commandedLocNotch = 0;

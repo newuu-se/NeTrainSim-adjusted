@@ -1,9 +1,9 @@
 # External Notch (Throttle) Control
 
 This document describes the notch-control extension added in this fork so
-NeTrainSim can be driven as a reinforcement-learning environment: a controller
-outside the simulator sets the throttle notch of a train, advances the
-simulation by one time step, and reads back the resulting state.
+NeTrainSim can be driven by an external notch controller: a controller outside
+the simulator sets the throttle notch of a train, advances the simulation by one
+time step, and reads back the resulting state.
 
 It is the local implementation of the feature requested upstream in
 [VTTI-CSM/NeTrainSim#42](https://github.com/VTTI-CSM/NeTrainSim/issues/42).
@@ -49,11 +49,11 @@ numerically identical results.
 
 In the original code `Locomotive::getTractiveForce` returns the adhesion limit
 `μ·m·g` whenever `trainSpeed == 0`, regardless of notch. That is correct for
-the simulator's own operator model but wrong for an RL action space, where
-"notch 0" must mean "no tractive effort". When notch control is enabled, a
-commanded `λ ≤ 0` at `trainSpeed == 0` returns `0 N` before the adhesion
-calculation. The default path (notch control off) keeps the original
-adhesion-limit behaviour.
+the simulator's own operator model but wrong for an external controller's
+action space, where "notch 0" must mean "no tractive effort". When notch
+control is enabled, a commanded `λ ≤ 0` at `trainSpeed == 0` returns `0 N`
+before the adhesion calculation. The default path (notch control off) keeps the
+original adhesion-limit behaviour.
 
 ## C++ API
 
@@ -66,14 +66,18 @@ train->setNotch(int notch);                    // same notch on every locomotive
 train->setNotches(const Vector<int> &notches); // one notch per locomotive
 train->clearNotch();                           // hand control back to the simulator
 bool ok        = train->hasNotchControl();     // is external control active?
-int  n         = train->getCurrentNotch();     // leading locomotive's notch
+int  n         = train->getLeadNotch();        // leading locomotive's notch
 Vector<int> ns = train->getCurrentNotches();   // one entry per locomotive
 ```
 
 `setNotches` applies `min(notches.size(), locomotives.size())` entries; trailing
-locomotives keep their previous command. The notch is idempotent per step —
-`updateLocNotch` runs twice per simulation step, and the commanded value is
-re-applied both times.
+locomotives keep their previous command. Locomotive order is **front (leading)
+locomotive first, rear last**, matching the way `Train::rearrangeTrain()` builds
+the consist, so `getLeadNotch()` equals `getCurrentNotches().front()`. A consist
+can hold different notches per locomotive, so `getLeadNotch()` alone is not a
+train-wide value — use `getCurrentNotches()` when that matters. The notch is
+idempotent per step — `updateLocNotch` runs twice per simulation step, and the
+commanded value is re-applied both times.
 
 ### `SimulatorAPI`
 
@@ -104,7 +108,8 @@ The `set*` calls return `false` when the train is not found in the network.
 ```
 
 `notch` and `notches` always hold the notch actually in effect, whether it was
-commanded externally or chosen by the simulator's operator model. All
+commanded externally or chosen by the simulator's operator model. `notch` is the
+leading locomotive only (see above); `notches` is ordered front to back. All
 pre-existing fields are unchanged.
 
 ## Server commands
@@ -184,11 +189,12 @@ object:
 Errors are reported through the server's existing `onErrorOccurred` path
 (missing fields, unknown network or train).
 
-## Reinforcement-learning loop
+## External control loop
 
-There is no "advance one simulation step" primitive. `runSimulator` blocks for
-`byTimeSteps` seconds of simulated time and then emits `simulationAdvanced`.
-The control loop is therefore:
+A reinforcement-learning agent is only one possible consumer; the loop below is
+generic. There is no "advance one simulation step" primitive. `runSimulator`
+blocks for `byTimeSteps` seconds of simulated time and then emits
+`simulationAdvanced`. The control loop is therefore:
 
 1. `runSimulator` with `byTimeSteps: <dt>` and `includeTrainStates: true`
 2. read `trainStates` off the `simulationAdvanced` event → observation, reward

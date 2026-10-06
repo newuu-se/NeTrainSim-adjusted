@@ -43,6 +43,7 @@ the locomotive's `Nmax` and `maxLocNotch`.
 |---|---|
 | Default path | control is off by default; `λ` recorded at 0 / 2.5 / 10 / 22 m/s |
 | `N = Nmax` | control turns on; `λ = 1.0` at every speed |
+| Lead notch | `getLeadNotch()` equals `getCurrentNotches().front()` (locomotive order is front/leading first) |
 | `N = 0` | `λ = 0` at every speed; standstill force is `0 N`, while the uncontrolled standstill force is unchanged (non-zero adhesion limit) |
 | `N = Nmax/2` | `λ = (N/Nmax)²` at every speed |
 | Clamping | `N + 100` → `Nmax`; `-5` → `0`; powered-off loco reports `0` |

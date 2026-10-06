@@ -310,11 +310,11 @@ double Locomotive::getThrottleLevel(double & trainSpeed,
                                     bool &optimize,
                                     double &optimumThrottleLevel)
 {
-	double currentThrottleLevel = 0;
-	double throttleL = 0;
 	if (this->useCommandedNotch) {
 		return this->commandedThrottleLevel;
 	}
+	double currentThrottleLevel = 0;
+	double throttleL = 0;
 	throttleL = getDiscretizedThrottleCoef(trainSpeed);
 	if (optimize) {
 		if (optimumThrottleLevel < 0){

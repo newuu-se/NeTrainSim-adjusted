@@ -78,7 +78,7 @@ NeTrainSim is an open-source train simulation software that allows users to simu
     
 - **Energy optimization**: NeTrainSim includes an energy optimization module for optimizing individual or grouped trains (under development).
 
-- **External notch (throttle) control**: NeTrainSim can be driven as a reinforcement-learning environment — a controller outside the simulator sets the traction notch, advances the simulation one time step, and reads back the resulting state. See [docs/notch-control.md](docs/notch-control.md) for the API and server commands. The published dynamics and energy models are unchanged, and the default path is unaffected when the feature is not used.
+- **External notch (throttle) control**: NeTrainSim can be driven by an external notch controller: a controller outside the simulator sets the traction notch, advances the simulation one time step, and reads back the resulting state. See [docs/notch-control.md](docs/notch-control.md) for the API and server commands. The published dynamics and energy models are unchanged, and the default path is unaffected when the feature is not used.
 
 <p align = 'center'>
 <img src="https://github.com/VTTI-CSM/NeTrainSim/assets/77444744/aaa0a970-84d8-435f-bcfc-dbf740546d76" width="500" alt ="main NeTrainSim window">

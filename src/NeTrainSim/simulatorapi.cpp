@@ -1535,11 +1535,11 @@ bool SimulatorAPI::InteractiveMode::
     }
     if (enabled)
     {
-        // keep the notch that is already commanded, or take over
-        // from whatever notch the simulation is currently at
+        // keep the notches that are already commanded, or take over
+        // from whatever notches the simulation is currently at
         if (!train->hasNotchControl())
         {
-            train->setNotch(train->getCurrentNotch());
+            train->setNotches(train->getCurrentNotches());
         }
     }
     else
@@ -1747,7 +1747,7 @@ bool SimulatorAPI::ContinuousMode::
     {
         if (!train->hasNotchControl())
         {
-            train->setNotch(train->getCurrentNotch());
+            train->setNotches(train->getCurrentNotches());
         }
     }
     else

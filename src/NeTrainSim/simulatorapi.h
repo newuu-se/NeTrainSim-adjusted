@@ -1282,7 +1282,8 @@ public:
          * the train.
          * @param trainID Unique identifier of the train.
          * @param notches One notch per locomotive, in
-         * locomotive order.
+         * locomotive order: the front (leading) locomotive
+         * first, the rear locomotive last.
          * @details The notch is clamped to the notches each
          * locomotive can achieve.
          * @return true if the train exists and was commanded.
@@ -1580,7 +1581,8 @@ public:
          * the train.
          * @param trainID Unique identifier of the train.
          * @param notches One notch per locomotive, in
-         * locomotive order.
+         * locomotive order: the front (leading) locomotive
+         * first, the rear locomotive last.
          * @details The notch is clamped to the notches each
          * locomotive can achieve.
          * @return true if the train exists and was commanded.

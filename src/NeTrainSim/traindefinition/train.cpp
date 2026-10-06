@@ -626,7 +626,7 @@ bool Train::hasNotchControl()
     return false;
 }
 
-int Train::getCurrentNotch()
+int Train::getLeadNotch()
 {
     if (this->locomotives.empty())
     {
@@ -2197,7 +2197,7 @@ QJsonObject Train::getCurrentStateAsJson()
         currentResistanceForces;
     jsonState["currentUsedTractivePower"] =
         currentUsedTractivePower;
-    jsonState["notch"]           = getCurrentNotch();
+    jsonState["notch"]           = getLeadNotch();
     jsonState["notchControlOn"]  = hasNotchControl();
     QJsonArray notchesArray;
     for (const int notch : getCurrentNotches())

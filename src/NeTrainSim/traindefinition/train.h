@@ -830,8 +830,11 @@ public:
      * @author	Qobiljon
      *
      * @param 	notches	One notch per locomotive, in locomotive
-     *                  order. Extra entries are ignored, missing
-     *                  locomotives keep their current notch.
+     *                  order: the front (leading) locomotive first,
+     *                  the rear locomotive last, matching
+     *                  Train::rearrangeTrain(). Extra entries are
+     *                  ignored, missing locomotives keep their
+     *                  current notch.
      */
     void setNotches(const Vector<int> &notches);
 
@@ -848,14 +851,17 @@ public:
     bool hasNotchControl();
 
     /**
-     * @returns	The notch of the first locomotive, or zero if the train
-     *          has no locomotive.
+     * @returns	The notch of the leading (front) locomotive, or zero if
+     *          the train has no locomotive. It is not a train-wide
+     *          value: locomotives of a consist may report different
+     *          notches, see getCurrentNotches().
      */
-    int getCurrentNotch();
+    int getLeadNotch();
 
     /**
      * @returns	The current notch of every locomotive, in locomotive
-     *          order.
+     *          order: the front (leading) locomotive first, the rear
+     *          locomotive last. So element 0 equals getLeadNotch().
      */
     Vector<int> getCurrentNotches();
 
