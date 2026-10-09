@@ -25,10 +25,11 @@ test code is changed by this PR.
 - With a speed command, the interesting observable is the **energy consumed in the step just
   simulated** — the controller wants to optimize a speed profile against energy, so it needs a
   reliable per-step energy read-back for the commanded speed.
-- An **earlier implementation of this feature already exists in another repository**. It could not
-  be located from this repo during the search performed for this request (see
-  [Prior art](#prior-art)). Whoever has access to it should **link it in a PR comment** so the team
-  can reuse it rather than re-derive the physics and plumbing.
+- An **earlier implementation of this feature already exists in another repository** —
+  `data/netrainsim_v2/set_speed.py` on `newuu-se/china-grant-rl-model-2025`, branch `azizbek` (see
+  [Prior art](#prior-art)). It sets speed at **file-authoring time**, not per time step, so we
+  still need this change; the parts worth reusing are its per-step state JSON and its interactive
+  control loop.
 
 ## Requested interface (proposal — open to change)
 
@@ -156,17 +157,49 @@ returns nothing — i.e. no speed-control (or notch-control) surface exists toda
 
 ## Prior art
 
-An **earlier implementation of externally commanded train speed already exists in another
-repository**. It was **not** found in this repo. Please **link it in a comment on this PR** so the
-implementer can reuse it instead of re-deriving the physics and plumbing.
+An earlier implementation of externally commanded train speed **has been located**:
 
-The following locations were checked during the search for this request and **did not contain it**
-(listed so nobody repeats the same search):
+> **`data/netrainsim_v2/set_speed.py`** on **`newuu-se/china-grant-rl-model-2025`**, branch
+> **`azizbek`** (this file exists only on that branch of the 7).
 
-- `newuu-se/china-grant-rl-model-2025` — all 7 branches
-- `newuu-se/ERL`
-- the local worktrees
-- GitHub code search for `setTrainSpeed`, `targetSpeed`, `desiredSpeed`, `speedControl`
+### How it works
+
+- `set_speed.py` rewrites the links file's `FreeFlowSpeed` column, **string-replacing the default
+  `19.4`** with a per-distance-band speed limit (`11.11` / `16.67` / `19.44` / `22.22` m/s), and
+  writes `data/netrainsim_v2/linksFile_v2_fixed_speed.dat`.
+- `rl/train_env.py` points `LINKS_FILE` at that generated file, so the train is forced to the
+  chosen speeds **because they are the links' free-flow speeds**.
+- Per-step telemetry already exists there: the interactive loop prints `NTS_JSON {…}` per step
+  with `speed_mps`, `position_m`, `energy_kwh`, `notch`, `link_max_speed_mps`, and `terminated`.
+- `energy_kwh` in that JSON is genuinely **per-step**, not cumulative: it is `Train::energyStat`.
+  **We already have this on our `main`** — `this->energyStat = NEC - NER;` and
+  `this->cumEnergyStat += this->energyStat;` at `src/NeTrainSim/traindefinition/train.cpp:1914-1915`
+  (fields at `train.h:135` and `train.h:137`), with `jsonState["cumEnergyStat"]` at
+  `train.cpp:2109`. So per-step energy is **existing plumbing**; the missing piece is only the
+  externally commanded speed.
+
+### Why it is not sufficient (why we still need this change)
+
+- Speed is set at **file-authoring time, not per time step**. Changing speed mid-run means
+  **regenerating the links file and restarting** the simulation — there is no per-step command.
+- The helper is a **string-replace hack**: it assumes the literal default `19.4` and the specific
+  50 m link spacing, so it is brittle and network-specific.
+- The value it sets is a **link speed limit, not a command**. The operator model can still run
+  **slower** than the limit, so the commanded speed is not actually realized.
+
+### What to reuse
+
+- The **per-step state-JSON shape** (`NTS_JSON {…}`) as the read-back format.
+- The **interactive stdin/stdout control loop** in `src/NeTrainSimConsole/main.cpp`
+  (`--interactive`, accepting `{"notch": N}` and emitting `NTS_JSON {…}`), introduced in commits
+  `f511858` and `ce049ec`.
+
+Note explicitly: the **notch-side override** in that repo
+(`Locomotive::rlOverrideEnabled` / `rlOverrideThrottle`) is the **ancestor of the closed PR #3
+approach** and is **not** what we want. We want the **same plumbing with `speed` as the commanded
+quantity**, replacing the notch override.
+
+Speed-file commits in that repo: `740a432` and `495bb5c`.
 
 ## Why is this a PR and not an issue?
 
